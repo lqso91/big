@@ -1,0 +1,219 @@
+一、MemCached
+	1、基本的原理和体系架构
+		（*）在内存中，维护一张巨大的Hash表
+		（*）MemCached通过一个路由算法来决定数据存储的位置，决定数据存储在哪个节点上
+	
+	2、安装和配置
+		前提：（1）有gcc的编译器
+		      （2）安装LibEvent:建议自己安装一个 
+					（*）确定是否已经安装LibEvent 
+					      rpm -qa|grep libevent
+					（*）卸载原来的libevent
+					      rpm -e libevent-2.0.21-4.el7.x86_64 --nodeps (表示不卸载相关的依赖)
+		安装libevent
+			*、解压：tar -zxvf libevent-2.0.21-stable.tar.gz
+			*、安装到/root/training/libevent目录
+				./configure --prefix=/root/training/libevent
+				make
+				make install
+		
+		安装memcache: 版本：memcached-1.4.25.tar.gz（官方的版本：节点之间彼此不进行通信）
+			（*）解压
+			（*）配置 ./configure --prefix=/root/training/memcached --with-libevent=/root/training/libevent
+			（*）编译安装  make 
+			               make install
+						   
+		 启动MemCached实例
+			./memcached -u root -d -m 128 -p 11211
+			./memcached -u root -d -m 128 -p 11212
+			./memcached -u root -d -m 128 -p 11213
+				
+	
+	3、操作MemCached
+		（*）命令行：MemCached没有自己的命令行工具，使用telnet作为命令行工具
+			 安装telnet客户端
+				rpm -ivh telnet-0.17-64.el7.x86_64.rpm
+				
+			 连接  telnet 127.0.0.1 11211
+			 操作命令：插入数据：add/set
+			       set: 如果key已经存在，会替换原来的值
+				   add: 如果key已经存在，返回一个错误
+				   
+				   举例：add key1 0 0 4
+				         参数：key1:是key
+						       第一个0： 标志位
+							   第二个0：数据过期的时间，0表示永远不过期
+							   4表示：数据的长度
+							   
+			管理命令：查看统计信息	    
+						统计信息的命令：
+						stats 
+						stats items
+						stats slabs				
+				
+		（*）Java API
+	
+	4、介绍：MemCached路由算法（客户端路由）
+		（1）求余数的Hash算法
+		
+		（2）一致性Hash算法
+	
+	
+	5、MemCached的主主复制功能：使用的是一个日本工程师改写的版本（非官方）
+	                           ：memcached-1.2.8-repcached-2.2.tar.gz
+		注意：不是主从复制
+		安装
+		tar zxvf memcached-1.2.8-repcached-2.2.tar.gz
+		cd memcached-1.2.8-repcached-2.2
+		./configure --prefix=/root/training/memcached_replication --with-libevent=/root/training/libevent/ --enable-replication
+		make
+		出错：
+		memcached.c:696:30: error: ‘IOV_MAX’ undeclared (first use in this function)
+		修改源码: vi memcached.c
+			 55 /* FreeBSD 4.x doesn't have IOV_MAX exposed. */
+			 56 #ifndef IOV_MAX
+			 57 //#if defined(__FreeBSD__) || defined(__APPLE__)
+			 58 # define IOV_MAX 1024
+			 59 //#endif
+			 60 #endif
+		
+		make install	
+
+	    启动，需要指定对端的地址
+		bigdata111： ./memcached -d -u root -m 128 -x 192.168.157.115
+		bigdata115： ./memcached -d -u root -m 128 -x 192.168.157.111
+		
+		错误
+		./memcached: error while loading shared libraries: libevent-2.0.so.5: 
+		cannot open shared object file: No such file or directory
+		
+		判断：命令memcached依赖哪些库?
+		      ldd memcached
+				linux-vdso.so.1 =>  (0x00007ffc9fc0f000)
+				libevent-2.0.so.5 => not found
+				libc.so.6 => /lib64/libc.so.6 (0x00007f7804599000)
+				/lib64/ld-linux-x86-64.so.2 (0x000056376fc98000)
+				
+			  创建一个连接，让系统的libevent-2.0.so.5指向我们自己安装的libevent
+			  64位系统： ln -s /root/training/libevent/lib/libevent-2.0.so.5 /usr/lib64/libevent-2.0.so.5
+			  32位系统： ln -s /root/training/libevent/lib/libevent-2.0.so.5 /usr/lib/libevent-2.0.so.5
+
+
+二、Redis：也需要gcc的编译器
+	（一）Redis简介
+		1、Redis的前身：MemCached
+		2、和MemCached的区别：（*）支持持久化：RDB快照、AOF日志
+		                      （*）丰富的数据类型
+	
+	（二）安装和配置Redis、核心配置文件
+		1、解压
+		2、编译安装
+		    make
+			make PREFIX=/root/training/redis install 
+			
+		3、Redis的命令脚本
+			redis-benchmark   Redis的压力测试工具
+			redis-check-aof   检查AOF日志文件
+			redis-check-dump  检查RDB日志文件
+			redis-cli         Redis的客户端脚本
+			redis-sentinel    Redis的哨兵
+			redis-server      Redis的服务器脚本
+			
+		4、核心配置文件	 redis.conf
+		   需要拷贝一个  cp ~/tools/redis-3.0.5/redis.conf conf/
+			参数
+				daemonize no 是否以后台运行Redis,建议改为yes
+				port 6379
+				
+		启动：bin/redis-server conf/redis.conf
+		
+	（三）操作Redis：不作为重点
+		1、命令行： redis-cli
+		2、Java API
+		
+	（四）Redis的事务：不是真正的事务，是一种模拟
+		1、复习：事务（关系型数据库）
+		    （*）什么是事务？
+			（*）事务的特点？
+			（*）事务的特性？ ACID
+			（*）Oracle中事务的本质：将事务的DML操作写入日志
+			
+		2、Redis的事务的本质：将一组操作放入队列中，一次执行（批处理的概念）
+		3、对比Oracle和Redis的事务的区别
+						Oracle      	     						Redis
+			开启事务：  自动开启            						命令：multi
+			执行语句：  DML                						 	Redis的命令
+			提交事务：  显式提交（commit）、隐式提交（DDL）         命令：exec
+			回滚事务：  显式回滚（rollback）、隐式回滚              命令：discard
+		
+		4、举例：银行转账
+			set tom 1000
+			set mike 1000
+			multi  ---> 开启事务
+			decrby tom 100
+			incrby mike 100
+	
+		5、举例：买票
+		    set tom 1000
+			set ticket 1  有1张票
+			multi
+			decrby tom 100
+			decr ticket
+			exec
+	
+	（五）Redis锁机制（简单的锁）: 执行事务操作的时候，如果监视的值发生了变化，则提交失败
+	       命令：watch
+			举例：买票
+						set tom 1000
+						set ticket 1  有1张票
+						watch ticket  ----> 相当于给ticket加了锁
+						multi
+						decrby tom 100
+						decr ticket
+						exec		   
+		   
+	
+	（六）Redis的消息机制：消息系统
+	
+	（七）重点：Redis的持久化	
+		1、RDB
+		
+		2、AOF
+		
+	（八）重点：Redis的主从复制
+	
+	（九）重点：Redis的HA（哨兵机制）
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

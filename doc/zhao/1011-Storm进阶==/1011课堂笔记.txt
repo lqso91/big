@@ -1,0 +1,98 @@
+
+
+一、安装和配置Apache Storm
+	解压：tar -zxvf apache-storm-1.0.3.tar.gz -C ~/training/
+	设置环境变量：
+		STORM_HOME=/root/training/apache-storm-1.0.3
+		export STORM_HOME
+
+		PATH=$STORM_HOME/bin:$PATH
+		export PATH
+		
+	核心的配置文件：conf/storm.yaml
+
+	1、单节点的Storm（伪分布的模式）
+	    注意：-后面有个空格
+		storm.zookeeper.servers:
+			 - "bigdata111"
+			 
+		nimbus.seeds: ["bigdata111"]
+		
+		配置Supervisor上的slot的个数（端口号）
+		supervisor.slots.ports:
+		     - 6700
+			 - 6701
+			 - 6702
+			 - 6703
+		
+		配置一个目录，用于Nimbus保存任务和元信息目录
+		storm.local.dir: "/root/training/apache-storm-1.0.3/tmp"
+
+		启动：
+		  主节点：storm nimbus &
+		  丛节点：storm supervisor &
+		  Web UI:     storm ui &  通过网页来访问: http://ip:8080
+
+	 
+	2、全分布的Storm：三台机器
+		（*）跟上面的步骤一样
+		（*）把安装的目录拷贝到其他的节点
+		storm.zookeeper.servers:
+			 - "bigdata112"
+			 - "bigdata113"
+			 - "bigdata114"
+			 
+		nimbus.seeds: ["bigdata112"]
+		
+		配置Supervisor上的slot的个数（端口号）
+		supervisor.slots.ports:
+		     - 6700
+			 - 6701
+			 - 6702
+			 - 6703
+		
+		配置一个目录，用于Nimbus保存任务和元信息目录
+		storm.local.dir: "/root/training/apache-storm-1.0.3/tmp"
+		
+		
+		scp -r apache-storm-1.0.3/ root@bigdata113:/root/training
+		scp -r apache-storm-1.0.3/ root@bigdata114:/root/training
+		
+	3、HA
+		如果要搭建Storm的HA，只需要在nimbus.seeds中设置多个nimbus即可。
+		nimbus.seeds: ["bigdata112", "bigdata113"]
+
+--------------都使用单节点--------------
+二、Demo演示
+	
+	演示：WordCount程序
+	
+	1、如何启用Debug？修改配置文件
+	"topology.eventlogger.executors": 1	
+	
+	2、启动日志查看器：storm logviewer &
+	
+	3、storm jar storm-starter-topologies-1.0.3.jar org.apache.storm.starter.WordCountTopology MyWC
+
+
+三、开发WordCount程序：实时计算
+	1、重要的内容：分析WordCount程序数据处理的过程（Storm的编程模型）
+	
+	
+
+四、Storm的原理分析
+	1、Storm任务提交的过程
+	2、Storm内部通信的机制
+
+五、外部系统的集成
+
+
+
+
+
+
+
+
+
+
+

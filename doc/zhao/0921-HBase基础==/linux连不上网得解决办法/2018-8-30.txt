@@ -1,0 +1,76 @@
+
+
+==============Andy解答==============
+赵老师用得是红帽（redhat）
+Andy老师用得是(Centos7)
+1、详解命令
+桥接模式：自动分配IP
+仅主机模式:Vmnet1   =====》  192.168.177.0   =====》 windows =====》192.168.177.1
+NAT   模式:vmnet8   =====》  192.168.1.0     =====》 windows =====》192.168.1.1
+
+169.XXX.XXX.XXX
+
+
+============Linux网卡配置文件详解===============
+vi /etc/sysconfig/network-scripts/ifcfg-ens33   (eth0、ens67777)
+
+DEVICE=eth0 #指出设备名称     （*）固定
+NM_CONTROLLED=yes #network mamager的参数，实时生效，不需要重启  希望改成N0！！！
+ONBOOT=yes #设置为yes，开机自动启用网络连接   （*）固定
+BOOTPROTO=static #设置为none禁止DHCP，设置为static启用静态IP地址，设置为dhcp开启DHCP服务 （*）固定
+
+IPADDR=192.168.1.111 #IP地址   
+NETMASK=255.255.255.0 #子网掩码  （*）固定
+DNS1=8.8.8.8 #第一个dns服务器  	（*）固定
+DNS2=8.8.4.4 #第二个dns服务器   （*）固定
+GATEWAY=192.168.1.2 #设置网关    （*）固定
+
+
+TYPE=Ethernet #网络类型为：Ethernet
+IPV6INIT=no #禁止IPV6             （*）固定
+USERCTL=no #是否允许非root用户控制该设备，设置为no，只能用root用户更改
+HWADDR=00:0C:29:2C:E1:0F #网卡的Mac地址
+PREFIX=24     （*）固定
+DEFROUTE=yes    （*）固定
+IPV4_FAILURE_FATAL=yes   （*）固定
+NAME="System eth0" #定义设备名称  （*）固定
+
+
+vi /etc/resolv.conf 
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+
+=====================================================
+systemctl stop NetworkManager       关闭网卡
+systemctl disable NetworkManager    永久禁用网卡
+systemctl restart NetworkManager    重启网卡
+====================================================
+ifconfig \ ip addr
+==================防火墙===============================
+防火墙：firewall-cmd --state
+关闭防火墙：systemctl stop firewalld.service
+永久禁用防火墙：systemctl disable firewalld.service
+=================免密登陆SSH(9遍)========================
+ssh问题
+ssh 自身IP
+如果没配：
+ssh-keyegn -t rsa
+ssh-copy-id IP
+====================================================
+
+
+
+
+
+
+
+
+
+
+
+
+1、当我修改完IP得配置文档时，执行命令：service network restart
+
+2、虚拟机联网
+
+

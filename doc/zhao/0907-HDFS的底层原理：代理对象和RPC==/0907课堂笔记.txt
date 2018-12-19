@@ -1,0 +1,46 @@
+
+一、HDFS底层的原理
+	1、RPC：remote proceduer call 远程过程调用（协议）
+	2、Java的动态代理对象
+		（*）如果一个类的名字前面有$，表示这是一个代理对象
+		（*）是一种包装设计模式
+		（*）可以增强类的功能
+		（*）举例：Java的动态代理对象应用场景（典型：数据库连接池）
+	
+二、HDFS的联盟与HA简介
+	
+三、MapReduce程序开发
+	1、顾问以前的知识
+	   演示Demo：WordCount程序
+	   	   
+	2、分析WordCount数据处理的过程（非常、非常、非常重要）
+	3、开发自己的MapReduce程序
+		添加依赖的jar包
+		/root/training/hadoop-2.7.3/share/hadoop/common/*.jar
+		/root/training/hadoop-2.7.3/share/hadoop/common/lib/*.jar
+		
+		/root/training/hadoop-2.7.3/share/hadoop/mapreduce/*.jar
+		/root/training/hadoop-2.7.3/share/hadoop/mapreduce/lib/*.jar
+	
+	4、Yarn调度MapReduce任务的过程
+		
+四、MapReduce的高级功能
+	1、序列化
+	2、排序
+	3、分区
+	4、
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

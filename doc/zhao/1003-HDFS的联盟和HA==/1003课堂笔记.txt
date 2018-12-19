@@ -1,0 +1,83 @@
+
+一、ZooKeeper
+	1、什么是ZooKeeper？
+		（*）相当于是一个“数据库”
+		（*）是一个分布式协调框架，实现HA（High Availability）
+		（*）是一个分布式锁的管理框架，实现秒杀
+	2、提供的功能
+		（*）分布式协调
+		（*）分布式锁
+		（*）数据同步（端口：2888）、选举机制（投票，端口：3888）
+		
+	3、搭建单节点的ZooKeeper（运行：Standalone）
+		（*）解压、设置环境变量
+			ZOOKEEPER_HOME=/root/training/zookeeper-3.4.10
+			export ZOOKEEPER_HOME
+
+			PATH=$ZOOKEEPER_HOME/bin:$PATH
+			export PATH
+			
+		（*）核心配置文件：conf/zoo.cfg
+				dataDir=/root/training/zookeeper-3.4.10/tmp
+				
+				server.1=bigdata111:2888:3888
+				
+		（*）在/root/training/zookeeper-3.4.10/tmp目录下，创建一个文件：myid
+		     输入  1
+
+	4、利用ZK实现秒杀
+		（*）实现秒杀有几种不同的方式：
+			（1）ZooKeeper：利用分布式锁
+			（2）Redis：队列
+			（3）消息队列系统
+			（4）Oracle数据库：PL/SQL程序包(API)：dbms_lock
+	
+	5、搭建ZooKeeper集群
+		（*）在bigdata112上安装
+			（*）解压、设置环境变量
+				ZOOKEEPER_HOME=/root/training/zookeeper-3.4.10
+				export ZOOKEEPER_HOME
+
+				PATH=$ZOOKEEPER_HOME/bin:$PATH
+				export PATH
+				
+			（*）核心配置文件：conf/zoo.cfg
+					dataDir=/root/training/zookeeper-3.4.10/tmp
+					
+					server.1=bigdata112:2888:3888
+					server.2=bigdata113:2888:3888
+					server.3=bigdata114:2888:3888
+					
+			（*）在/root/training/zookeeper-3.4.10/tmp目录下，创建一个文件：myid
+				 输入  1	
+	
+			（*）把安装好的ZooKeeper目录，复制到其他节点
+				scp -r zookeeper-3.4.10/ root@bigdata113:/root/training
+				scp -r zookeeper-3.4.10/ root@bigdata114:/root/training
+	
+		（*）修改bigdata113和bigdata114上的myid文件
+
+		
+集群的两大功能：
+1、Fail Over  失败迁移
+2、Load Balance 负载均衡
+		
+二、Hadoop HA的实现  ----> 失败迁移的实现
+	以HDFS为例
+	隔离机制：会造成脑裂的问题（针对DataNode）
+	          什么是脑裂？在HA的环境中，同一个时刻，HDFS中存在多个Active的NameNode
+
+
+三、NameNode的联盟（Federation）  ----> 负载均衡一种实现
+
+
+四、HUE
+
+
+五、第二阶段小结
+
+
+
+
+
+

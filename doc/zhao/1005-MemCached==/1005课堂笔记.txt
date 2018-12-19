@@ -1,0 +1,308 @@
+
+
+集群的特点：
+（*）Fail Over：失败迁移
+（*）Load Balance：负载均衡
+
+一、NameNode的联盟（Federation）
+	（*）接收客户端的请求
+	（*）缓存1000M的元信息
+	（*）问题：（1）分摊NameNode压力
+	           （2）缓存更多的元信息
+			   
+	（*）搭建NameNode的联盟
+		1、规划
+			NameNode：bigdata112  bigdata113
+			DataNode: bigdata114  bigdata115
+		
+		2、在bigdata112上搭建
+			core-site.xml	
+				<property>
+					<name>hadoop.tmp.dir</name>
+					<value>/root/training/hadoop-2.7.3/tmp</value>
+				</property>
+			hdfs-site.xml
+				<property>
+					<name>dfs.nameservices</name>
+					<value>ns1,ns2</value>
+				</property>
+				
+				<property>
+					<name>dfs.namenode.rpc-address.ns1</name>
+					<value>192.168.157.112:9000</value>
+				</property>	
+
+				<property>
+					<name>dfs.namenode.http-address.ns1</name>
+					<value>192.168.157.112:50070</value>
+				</property>					
+
+				<property>
+					<name>dfs.namenode.secondaryhttp-address.ns1</name>
+					<value>192.168.157.112:50090</value>
+				</property>	
+
+				<property>
+					<name>dfs.namenode.rpc-address.ns2</name>
+					<value>192.168.157.113:9000</value>
+				</property>	
+
+				<property>
+					<name>dfs.namenode.http-address.ns2</name>
+					<value>192.168.157.113:50070</value>
+				</property>					
+
+				<property>
+					<name>dfs.namenode.secondaryhttp-address.ns2</name>
+					<value>192.168.157.113:50090</value>
+				</property>		
+
+				<property>
+					<name>dfs.replication</name>
+					<value>2</value>
+				</property>					
+			
+				<property>
+					<name>dfs.permissions</name>
+					<value>false</value>
+				</property>	
+
+		mapred-site.xml
+				<property>
+					<name>mapreduce.framework.name</name>
+					<value>yarn</value>
+				</property>
+				
+		yarn-site.xml
+		
+				<property>
+					<name>yarn.resourcemanager.hostname</name>
+					<value>192.168.157.112</value>
+				</property>		
+
+				<property>
+					<name>yarn.nodemanager.aux-services</name>
+					<value>mapreduce_shuffle</value>
+				</property>	
+
+		slaves
+			bigdata114
+			bigdata115
+			
+		配置路由规则（viewFS）
+			修改core-site.xml文件，直接加入以下内容：
+			注意：xdl1：是联盟的名字
+			
+				<property>
+					<name>fs.viewfs.mounttable.xdl1.homedir</name>
+					<value>/home</value>
+				</property>
+
+				<property>
+					<name>fs.viewfs.mounttable.xdl1.link./movie</name>
+					<value>hdfs://192.168.157.112:9000/movie</value>
+				</property>
+
+				<property>
+					<name>fs.viewfs.mounttable.xdl1.link./mp3</name>
+					<value>hdfs://192.168.157.113:9000/mp3</value>
+				</property>
+
+				<property>
+					<name>fs.default.name</name>
+					<value>viewfs://xdl1</value>
+				</property>		
+			
+			注意：如果路由规则太多了，造成core-site.xml文件不好维护
+			      可以单独创建一个xml文件来保存路由规则：mountTable.xml   ----> 加入到core-site.xml
+				  http://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/ViewFs.html
+		
+		3、复制到其他的节点
+			scp -r hadoop-2.7.3/ root@bigdata113:/root/training
+			scp -r hadoop-2.7.3/ root@bigdata114:/root/training
+			scp -r hadoop-2.7.3/ root@bigdata115:/root/training
+			
+		4、在每个NameNode（bigdata112和bigdata113）上单独进行格式化
+				hdfs namenode -format -clusterId xdl1
+		5、启动
+		
+		6、根据路由规则，在每个Namenode上创建对应的目录
+		     hadoop fs -mkdir hdfs://192.168.157.112:9000/movie
+			 hadoop fs -mkdir hdfs://192.168.157.113:9000/mp3
+			 
+		7、操作HDFS
+			[root@bigdata112 training]# hdfs dfs -ls /
+			Found 2 items
+			-r-xr-xr-x   - root root          0 2018-10-05 01:11 /movie
+			-r-xr-xr-x   - root root          0 2018-10-05 01:11 /mp3
+			
+			注意：看到的是viewFS
+		
+二、HUE
+	1、挂载光盘（rhel-server-7.4-x86_64-dvd.iso）：mount /dev/cdrom /mnt
+		创建rpm源文件 vi /etc/yum.repos.d/rhel7.repo
+			[rhel-yum]
+			name=rhel7
+			baseurl=file:///mnt
+			enabled=1
+			gpgcheck=0
+
+		执行下面的语句：
+			yum install gcc g++ libxml2-devel libxslt-devel cyrus-sasl-devel cyrus-sasl-gssapi mysql-devel python-devel python-setuptools sqlite-devel ant ibsasl2-dev libsasl2-modules-gssapi-mit libkrb5-dev libtidy-0.99-0 mvn openldap-dev libffi-devel gmp-devel openldap-devel
+	
+	2、安装HUE	
+		（1）解压  tar -zxvf hue-4.0.1.tgz
+		（2）编译并安装  
+		        cd hue-4.0.0/
+				PREFIX=/root/training make install
+				
+				PREFIX大写：安装的目录
+	3、添加用户hue
+	adduser hue
+	chown -R hue.hue /root/training/hue/
+	
+	4、修改Hadoop的配置
+		hdfs-site.xml
+			<property>
+				<name>dfs.webhdfs.enabled</name>
+				<value>true</value>
+			</property>
+			
+		core-site.xml
+			<property>
+				<name>hadoop.proxyuser.root.hosts</name>
+				<value>*</value>
+			</property>
+
+			<property>
+				<name>hadoop.proxyuser.root.groups</name>
+				<value>*</value>
+			</property>
+	
+	5、配置HUE：核心的配置文件 hue.ini
+	
+	
+三、第二阶段小结
+	1、HBase
+		（*）NoSQL数据库：HBase、MemCache（Redis的前身）、MongoDB、Cassandra
+		（*）HBase的体系架构
+			（1）ZooKeeper、HMaster、RegionServer
+			（2）概念：行键、列族
+		（*）操作：命令行hbase shell、Java（访问的是ZooKeeper）、Web Console（端口：16010）
+		（*）HBase的过滤器
+		（*）HBase上MapReduce
+		（*）HBase在ZK上保存的数据
+		
+	2、Hive
+		（*）数据分析引擎：Hive、Pig、Impala、Spark SQL
+		（*）基于HDFS上的数据仓库
+				Hive    HDFS
+				表      目录
+				分区    目录
+				数据    文件
+				桶      文件
+				
+		（*）支持SQL的子集
+		（*）数据模型：内部表、分区表（SQL的执行计划）、桶表、外部表、视图
+		（*）Hive的JDBC操作：启动hiveserver2，端口：10000
+		（*）自定义函数：UDF
+		
+	3、Pig
+		（*）数据分析引擎，支持PigLatin语句
+		（*）从0.17开始，支持Spark
+		（*）pig的数据模型：bag、tuple、field
+		（*）使用PigLatin语句分析数据：启动historyserver
+		（*）Pig的自定义函数：自定义运算函数、自定义过滤函数、自定义的加载函数
+		
+	4、Sqoop
+		（*）数据交换工具：RDBMS <---> Sqoop <---> HDFS、Hive、HBase
+		（*）基于JDBC
+		
+	5、Flume	
+		（*）采集日志
+		（*）体系架构：agent = source组件 + channel组件 + sink组件
+		
+	建议：自学一下kettle
+	
+	6、ZooKeeper
+		（*）相当于是一个“数据库”
+		（*）角色：leader、follower
+		（*）功能：数据同步
+		           选举机制
+				   分布式锁：秒杀
+				   
+	7、利用ZooKeeper实现Hadoop的HA
+	8、namenode的联盟
+	9、HUE：基于Web的管理工具
+
+	
+NoSQL数据库：基于内存的NoSQL：Memcache和Redis
+大数据的计算：（1）离线计算
+              （2）实时计算：Storm、Spark Streaming ---> 结果一般会保存到Redis中
+
+1、为什么要把数据存入内存？
+	原因：快
+2、举例：以B/S架构为例，如何提高性能？
+3、常见的基于内存的数据库
+	（*）MemCached：看成是Redis的前身，严格来说，MemCached不能叫数据库，只能叫缓存
+	                不支持持久化
+	（*）Redis：内存数据库，持久化（RDB、AOF）
+	（*）Oracle TimesTen：Oracle公司的内存数据库
+	（*）SAP HANA
+	
+四、MemCached
+	1、基本的原理和体系架构
+		（*）在内存中，维护一张巨大的Hash表
+		（*）MemCached通过一个路由算法来决定数据存储的位置，决定数据存储在哪个节点上
+	
+	2、安装和配置
+		前提：有gcc的编译器
+	
+	
+	3、操作MemCached
+	
+	4、介绍：MemCached路由算法（客户端路由）
+	
+	5、MemCached的主主复制功能：使用的是一个日本工程师改写的版本（非官方）
+		注意：不是主从复制
+
+
+五、Redis：也需要gcc的编译器
+
+
+六、大数据的实时计算框架：Apache Storm
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

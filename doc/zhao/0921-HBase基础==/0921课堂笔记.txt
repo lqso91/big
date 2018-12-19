@@ -1,0 +1,172 @@
+
+
+NoSQL数据库之：HBase
+---------------------------------------
+一、NoSQL数据库简介
+	1、什么是NoSQL数据库？not only sql
+		（*）一般来说：NoSQL不支持事务
+	
+	
+	2、常见的NoSQL数据库
+		（*）HBase
+		（*）Redis：基于内存的NoSQL数据库，前身：MemCached（缺点：不支持持久化）
+		            支持持久化：RDB、AOF
+					Codis是Redis分布式解决方案
+		（*）MongoDB：基于文档型（BSON文档）的NoSQL数据库
+		              举例：设计一个数据库来保存电影的信息
+					  从MongoDB 4.0开始：支持事务
+					  支持：数据的分布式存储
+					        MapReduce（是JavaScript程序）
+		（*）Cassandra：跟HBase类似
+
+二、HBase的体系架构（主从结构）和表结构
+	1、Hadoop的生态体系圈
+	2、HBase
+		（*）基于HDFS之上的NoSQL数据库
+					HBase       HDFS
+					表   ---->  目录
+					数据 ---->  文件（HFile，默认大小：128M）
+		（*）HBase的体系架构
+
+
+三、搭建HBase的环境
+
+	准备：
+	解压   tar -zxvf hbase-1.3.1-bin.tar.gz -C ~/training/
+	设置环境变量 vi ~/.bash_profile
+		HBASE_HOME=/root/training/hbase-1.3.1
+		export HBASE_HOME
+
+		PATH=$HBASE_HOME/bin:$PATH
+		export PATH
+
+	1、本地模式
+		特点：不需要HDFS，把数据直接存在操作系统Linux
+		配置：
+		hbase-env.sh
+			     28 export JAVA_HOME=/root/training/jdk1.8.0_144
+		
+		hbase-site.xml
+		    <!--HBase数据保存的目录-->
+			<property>
+			     <name>hbase.rootdir</name>
+				 <value>file:///root/training/hbase-1.3.1/data</value>
+			</property>
+			
+		启动HBase:  start-hbase.sh  ----> 只会启动HMaster
+	
+	2、伪分布模式：一个ZK、一个HMaster、一个RegionServer
+		hbase-env.sh
+			    129 export HBASE_MANAGES_ZK=true  使用HBase自带的ZooKeeper
+		
+		hbase-site.xml
+		    <!--HBase对应的HDFS目录-->
+			<property>
+			     <name>hbase.rootdir</name>
+				 <value>hdfs://192.168.157.111:9000/hbase</value>
+			</property>		
+
+			<!--是一个分布式环境-->
+			<property>
+			     <name>hbase.cluster.distributed</name>
+				 <value>true</value>
+			</property>	
+
+			<!--指定ZK的地址-->
+			<property>
+			     <name>hbase.zookeeper.quorum</name>
+				 <value>192.168.157.111</value>
+			</property>		
+
+			<property>
+			     <name>dfs.replication</name>
+				 <value>1</value>
+			</property>	
+
+		regionservers
+			
+	
+	3、全分布模式（下次课讲，我的虚拟机坏了）
+	
+	4、实现HBase的HA（下次课讲，我的虚拟机坏了）
+	
+四、操作HBase
+	1、Web Console
+		端口：新的：16010
+		     老版本：60010
+	
+	2、命令行：举几个例子（补充点知识：SQL的知识）
+		（*）创建表： create 'student','info','grade'
+		     查看表:  list
+			          MySQL: show tables;
+					  Oracle: select * from tab;
+					  
+			查看表结构：desc 'student'
+			            describe 'student'
+						
+			SQL中（Oracle）：desc和describe什么区别？ 都是看表结构
+			                (*) desc 是SQL*PLUS语句，可以缩写
+							(*) describe是SQL语句，不能缩写
+							
+		（*）插入数据：put
+		（*）查询数据：
+				scan   相当于  select * from student
+				get    相当于  select * from student where rowkey=???
+				
+				为了加快查询的速度，可以建立HBase的二级索引
+	
+		（*）清空表数据：truncate
+			日志：
+				hbase(main):005:0> truncate 'student'
+				Truncating 'student' table (it may take a while):
+				 - Disabling table...
+				 - Truncating table...
+				0 row(s) in 3.9740 seconds
+			
+			老版本的HBase使用truncate
+			日志：
+				hbase(main):005:0> truncate 'student'
+				Truncating 'student' table (it may take a while):
+				 - Disabling table...
+				 - Dropping table...
+				 - Creating table
+				0 row(s) in 3.9740 seconds	
+
+			补充一个知识：delete和truncate什么区别？（以Oracle为例）
+				1、delete是DML（Data Manipulation Language）语句，DML可以回滚
+				   truncate是DDL（Data Definition Language）语句，DDL不可以回滚
+				2、delete会产生碎片、truncate不会
+				3、delete不会释放空间，truncate会
+				4、delete可以闪回(flashback)，truncate不可以
+			
+		（*）删除表：  drop
+				hbase(main):007:0> disable 'student'
+				0 row(s) in 2.2980 seconds
+
+				hbase(main):008:0> drop 'student'
+				0 row(s) in 1.3770 seconds
+	
+	3、Java API
+	
+五、数据保存的过程（一定注意：Region的分裂）
+
+六、HBase的过滤器（相当于SQL中的：where语句）
+
+七、HBase上的MapReduce
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,194 @@
+
+
+Spark SQL：类似Hive、Pig
+=======================================================
+二、使用数据源
+	1、使用load函数，save函数
+		（*）默认的数据源是：Parquet文件
+		（*）举例：
+			scala> val userDF = spark.read.load("/root/temp/users.parquet")
+			userDF: org.apache.spark.sql.DataFrame = [name: string, favorite_color: string ... 1 more field]
+
+			scala> userDF.printSchema
+			root
+			 |-- name: string (nullable = true)
+			 |-- favorite_color: string (nullable = true)
+			 |-- favorite_numbers: array (nullable = true)
+			 |    |-- element: integer (containsNull = true)
+
+
+			scala> userDF.show
+			+------+--------------+----------------+
+			|  name|favorite_color|favorite_numbers|
+			+------+--------------+----------------+
+			|Alyssa|          null|  [3, 9, 15, 20]|
+			|   Ben|           red|              []|
+			+------+--------------+----------------+
+			
+			执行查询，并保存结果
+			userDF.select($"name",$"favorite_color").write.save("/root/result/parquet")
+
+	2、Parquet文件：列式存储文件、是Spark SQL默认是数据源
+		（*）把其他文件，转成一个Parquet文件
+		（*）支持Schema的合并
+			（1）项目开始的时候，表（schema）很简单
+			（2）逐步向表中增加新的列
+			举例
+				val df1 = sc.makeRDD(1 to 5).map(i=>(i,i*2)).toDF("single","double")
+				df1.write.parquet("/root/myresult/test_table/key=1")
+				
+				val df2 = sc.makeRDD(6 to 10).map(i=>(i,i*3)).toDF("single","triple")
+				df2.write.parquet("/root/myresult/test_table/key=2")
+			
+				合并Schema
+				val df3 = spark.read.option("mergeSchema","true").parquet("/root/myresult/test_table")
+	
+	3、JSON文件：参考讲义
+	
+	4、JDBC：
+		（*）注意：启动Spark-shell的时候，加载数据库的驱动（jar包）
+				bin/spark-shell --master spark://bigdata111:7077    
+				                --jars /root/temp/ojdbc6.jar         
+								--driver-class-path /root/temp/ojdbc6.jar
+	
+		（1）方式一：
+		     val oracleDF = spark.read.format("jdbc")
+			                     .option("url","jdbc:oracle:thin:@192.168.157.102:1521/orcl.example.com")
+								 .option("user","scott")
+								 .option("password","tiger")
+								 .option("dbtable","scott.emp").load
+	
+		（2）方式二：定义一个Properites类
+			scala> oracleProps.setProperty("user","scott")
+			res3: Object = null
+
+			scala> oracleProps.setProperty("password","tiger")
+			res4: Object = null
+
+			scala> val oracleDF1=spark.read.jdbc("jdbc:oracle:thin:@192.168.157.102:1521/orcl.example.com","scott.dept",oracleProps)
+			oracleDF1: org.apache.spark.sql.DataFrame = [DEPTNO: decimal(2,0), DNAME: string ... 1 more field]
+
+	5、Hive
+		（*）Spark SQL完全兼容Hive
+		（*）需要进行配置
+				拷贝以下的文件到 $SPARK_HOME/conf目录下
+					Hive: hive-site.xml
+				Hadoop:   core-site.xml和hdfs-site.xml
+				
+				启动Spark Shell的时候，需要指定MySQL的驱动
+
+
+三、在Scala IDE中开发Spark SQL程序：参考讲义
+	细节的地方：
+		把Spark输出的日志关闭（采用log4j的日志管理）
+	注意：如果不希望在Spark执行中，打印过多的日志，可以使用下面的语句：
+	Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
+	Logger.getLogger("org.eclipse.jetty.server").setLevel(Level.OFF)
+		
+
+四、性能的优化：缓存的方式（内存）:DataFrame（DataSet）表：表现形式上就是一个RDD
+	1、在内存中缓存表的数据
+		RDD中：RDD.cache
+		       RDD.persist
+			   
+		Spark SQL中：SparkSession.sqlContext.cacheTable
+				
+		Spark中的context对象
+		（1）Spark Context
+		（2）SQL Context
+		（3）Streaming Context
+		
+		统一起来：Spark Session（包含了上面的三个Context对象）
+		
+	
+		举例：操作Oracle数据库为例
+		bin/spark-shell --master spark://bigdata111:7077    
+						--jars /root/temp/ojdbc6.jar         
+						--driver-class-path /root/temp/ojdbc6.jar
+		
+		val oracleDF = spark.read.format("jdbc")
+			           .option("url","jdbc:oracle:thin:@192.168.157.102:1521/orcl.example.com")
+					   .option("user","scott")
+					   .option("password","tiger")
+					   .option("dbtable","scott.emp").load
+
+		注册成是一个表（因为视图是不存数据的）
+		oracleDF.registerTempTable("emp")
+		
+		执行查询
+		spark.sql("select * from emp").show
+		spark.sqlContext.cacheTable("emp") ----> 这一步表示：标识这张表可以被缓存
+		spark.sql("select * from emp").show  ----> 这一次：依然要读取Oracle
+		spark.sql("select * from emp").show  ----> 这一次：很快
+		
+		检查web console的执行时间
+		清空缓存
+		spark.sqlContext.clearCache
+	
+	2、了解性能优化的相关参数：参考讲义
+
+
+五、上上次课的作业：P57页
+	val rdd4 = sc.parallelize(List("12","23","345",""),2)
+	rdd4.aggregate("")((x,y) => math.min(x.length, y.length).toString, (x,y) => x + y)
+	求最小值，初始值""
+	
+	分区0：
+	"12","23"
+	
+	第一次比较：""和"12"比较 ----> 长度最小值：0  ---> toString ---> 得到字符串"0"
+	第二次比较："0"和"23"比较 ---> 长度最小值：1  --> toString ---> 字符串的"1"
+	
+	
+	分区1：按照同样的方式进行分析
+	"345",""
+
+Spark Streaming：流式计算框架，类似Storm
+常用的实时计算引擎（流式计算）
+1、Apache Storm
+2、Spark Streaming：严格上来说，不是真正的流式计算（实时计算）
+                    把连续的（流式的）数据当成不连续的RDD来处理。
+					本质上：是离散计算（不连续的）
+					
+3、Apache Flink：跟Spark Streaming相反
+                 把离散的数据当成流式数据来处理
+
+4、JStorm
+=======================================================
+一、Spark Streaming基础
+	1、什么是Spark Streaming？
+		Spark Streaming makes it easy to build scalable fault-tolerant streaming applications.
+	   
+	   特点：（1）易用，已经集成在了Spark中
+	         （2）容错性：底层也是RDD
+			 （3）支持Java、Scala、Python语言
+			 
+	2、演示Demo：执行WordCount单词计数
+		使用消息服务器：netcat
+	    执行Demo
+			
+		非常重要：一定要保证CPU的核数大于等于2
+	   
+
+二、高级的特性
+
+
+三、数据源
+	1、基本的数据源
+	2、高级数据源
+		（1）Flume
+		（2）Apache Kafka：消息系统，类似Redis的消息
+		
+四、性能优化的参数
+
+
+
+
+
+
+
+
+
+
+
+

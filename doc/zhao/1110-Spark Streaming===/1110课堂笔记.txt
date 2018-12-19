@@ -1,0 +1,67 @@
+想免费下载网易云的付费音乐吗?想破解ctf游戏,获取顶级装备吗?想攻破某一台服务器吗?
+今天晚上10:30
+博士生导师--钱德勒(带你飞)
+上课地址:地址:https://www.shiguangkey.com/course/2560
+今天晚上到教室的同学,随机抽取五名,免费学安卓一个月(直播). 
+
+
+****************************************
+
+Spark Streaming的高级数据源
+-------------------------------------
+一、Flume：都有两种方式
+	1、基于Flume的Push模式
+		依赖的jar
+		（1）Flume的lib目录
+		（2）spark-streaming-flume_2.10-2.1.0.jar
+	
+	2、基于Customer Sink的Pull模式  ---> 更好，需要定义一个Sink组件
+		（1）还需要一个jar包
+		（2）还需要做一些工作：参考讲义
+
+二、Apache Kafka：都有两种方式
+	集成Spark Streaming和Kafka
+	1、基于Receiver方式接受数据
+	2、直接读取方式 ---->  更好
+
+三、回顾一下：第三阶段的小结：Spark
+	1、Scala编程语言
+		（1）基础
+		（2）面向对象：类似Java
+		（3）函数式编程：高阶函数
+		（4）高级特性和集合：集合、泛型、隐式（类、函数、参数）
+		
+	2、Spark Core：核心是RDD
+		（1)Spark的体系架构
+		（2）HA：基于文件目录的、基于ZooKeeper
+		（3）工具：spark-submit  spark-shell
+		（4）分析和开发：WordCount
+		（5）RDD和RDD特性
+		
+	3、Spark SQL
+		（1）核心是：DataFrame和DataSet ----> 表 -----> 本质也是一个RDD
+		（2）支持：DSL语句和SQL语句
+		（3）视图：全局、本地
+		（4）数据源：Parquet文件、JSON、JDBC、Hive等等
+		
+	4、Spark Streaming
+		（1）核心：DStream离散流-----> 本质也是一个RDD
+		（2）输入流
+				（*）基本：文件流、RDD队列流、Socket套接字流
+				（*）高级：Flume、Kafka
+		（3）输出
+
+四、实际的生产中：一般用HDP、CDH
+    学习阶段：Apache版本
+
+
+
+
+
+
+
+
+
+
+
+

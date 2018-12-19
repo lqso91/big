@@ -1,0 +1,85 @@
+
+一、实现自连接的MapReduce程序
+
+
+二、使用MapReduce实现倒排索引：是最复杂的一个例子
+
+
+三、使用MRUnit：类似JUnit（执行Java的单元测试）
+
+
+四、第一阶段小结
+（一）大数据的背景知识
+	1、什么是大数据？
+		举例：（1）商品推荐
+		      （2）天气预报
+		核心：数据的存储：HDFS（分布式的文件系统）
+		      数据的计算：MapReduce（分布式的计算模型）
+			  
+	2、什么是数据仓库？
+		（*）Hadoop和Spark都可以看成是数据仓库的一种实现方式
+		
+	3、Google的三篇论文
+		（*）GFS：Google File System
+		（*）MapReduce：问题来源是PageRank
+		（*）BigTable：大表 ----> HBase
+		
+（二）Hadoop的体系架构：都是主从架构（只要是主从架构都有单点故障的问题）
+	1、HDFS
+		（*）NameNode
+		（*）DataNode
+		（*）SecondaryNameNode
+	
+	2、Yarn
+		（*）ResourceManager
+		（*）NodeManager
+		
+	3、安装配置
+		（*）本地模式
+		（*）伪分布模式
+		（*）全分布模式
+		
+（三）HDFS
+	1、基本操作：命令行、Java API、Web Console
+	2、原理：上传、下载
+	         RPC、代理对象
+			 
+	3、高级特性：回收站、快照、安全模式等等
+	4、后面讲：NameNode联盟（Federation）
+	
+	
+（四）MapReduce
+	1、掌握：数据处理流程分析（以WordCount为例）
+	2、功能：序列化
+	         排序
+			 分区
+			 合并
+	3、核心：洗牌Shuffle
+	4、案例
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

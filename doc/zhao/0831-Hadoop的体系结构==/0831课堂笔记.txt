@@ -1,0 +1,178 @@
+
+一、Hadoop的安装与配置
+	（一）免密码登录的原理和配置
+	
+	（二）全分布模式：真正用于生产的环境
+		1、至少需要3台机器
+		2、集群的规划
+		3、准备工作
+			（*）安装三台Linux、JDK、关闭防火墙
+			（*）设置主机名和IP  vi /etc/hosts
+					192.168.157.112 bigdata112
+					192.168.157.113 bigdata113
+					192.168.157.114 bigdata114
+			
+			（*）配置免密码登录：两两之间的免密码登录
+					ssh-copy-id -i .ssh/id_rsa.pub root@bigdata112
+					ssh-copy-id -i .ssh/id_rsa.pub root@bigdata113
+					ssh-copy-id -i .ssh/id_rsa.pub root@bigdata114
+					
+			（*）保证集群的时间同步
+			
+		4、在主节点上安装（bigdata112）
+			（*）解压和设置环境变量
+			（*）hadoop-env.sh
+					export JAVA_HOME=/root/training/jdk1.8.0_144
+					
+			（*）hdfs-site.xml
+					<!--配置数据块的冗余度,默认是3-->
+					<!--原则冗余度跟数据节点个数保持一致,最大不要超过3-->
+					<property>	
+						<name>dfs.replication</name>
+						<value>2</value>
+					</property>
+
+					<!--是否开启HDFS的权限检查，默认是true-->
+					<!--使用默认值，后面会改为false-->
+					<!--
+					<property>	
+						<name>dfs.permissions</name>
+						<value>false</value>
+					</property>				
+                    -->			
+					
+			（*）core-site.xml
+					<!--配置HDFS主节点的地址，就是NameNode的地址-->
+					<!--9000是RPC通信的端口-->
+					<property>	
+						<name>fs.defaultFS</name>
+						<value>hdfs://bigdata112:9000</value>
+					</property>	
+
+					<!--HDFS数据块和元信息保存在操作系统的目录位置-->
+					<!--默认是Linux的tmp目录,一定要修改-->
+					<property>	
+						<name>hadoop.tmp.dir</name>
+						<value>/root/training/hadoop-2.7.3/tmp</value>
+					</property>			
+			
+			（*）mapred-site.xml
+					<!--MR程序运行容器或者框架-->
+					<property>	
+						<name>mapreduce.framework.name</name>
+						<value>yarn</value>
+					</property>				
+			
+			（*）yarn-site.xml
+			        <!--配置Yarn主节点的位置-->
+					<property>	
+						<name>yarn.resourcemanager.hostname</name>
+						<value>bigdata112</value>
+					</property>			
+
+					<!--NodeManager执行MR任务的方式是Shuffle洗牌-->
+					<property>	
+						<name>yarn.nodemanager.aux-services</name>
+						<value>mapreduce_shuffle</value>
+					</property>				
+			
+			（*）slaves 配置从节点地址
+			      bigdata113
+				  bigdata114
+			
+			（*）对namenode进行格式化
+			
+		5、把bigdata112上安装好的目录复制到从节点上
+			scp -r hadoop-2.7.3/ root@bigdata113:/root/training
+			scp -r hadoop-2.7.3/ root@bigdata114:/root/training
+		
+		6、在主节点上启动集群
+		   start-all.sh
+		   
+		7、跟伪分布一样，在主节点上执行WordCount
+	
+	（三）主从结构的单点故障：暂时不解决
+	
+二、HDFS：数据存储
+	（一）HDFS的体系架构
+		1、NameNode：名称节点
+			（*）职责：
+				（1）是HDFS的主节点、管理员
+				（2）接收客户端（命令行、Java程序）的请求：创建目录、上传数据、下载数据、删除数据等等
+				（3）管理和维护HDFS的日志和元信息
+					（*）日志文件（edits文件）：记录的是客户端的所有操作，同时体现了HDFS的最新的状态
+						 是一个二进制文件
+						 位置：$HADOOP_HOME/tmp/dfs/name/current
+						 edits_inprogress_0000000000000000107 代表：正在操作的日志文件
+						 
+						 举例：hdfs dfs -mkdir /aaa
+						 HDFS提供了一个日志查看器（edits viewer），把edits文件转成文本（XML）格式
+						   命令：hdfs oev -i edits_inprogress_0000000000000000107 -o ~/a.xml
+						   
+						   
+					（*）元信息文件（fsimage文件）：记录的是数据块的位置信息、数据块的冗余信息
+					     没有提现HDFS的最新状态
+					     是一个二进制文件
+						 位置：$HADOOP_HOME/tmp/dfs/name/current
+						 HDFS提供了一个元信息查看器（image viewer），把fsimage文件转为文本或者xml都可以
+					
+		2、DataNode：数据节点
+			（*）职责：按照数据块保存数据库
+			            1.x： 64M
+						2.x：128M
+						
+			（*）数据块：表现形式：就是一个文件（blk*******）
+					位置：/root/training/hadoop-2.7.3/tmp/dfs/data/current/BP-419062579-192.168.157.111-1535553141546/current/finalized/subdir0/subdir0
+					
+					举例：上传一个大于128M的文件
+					
+			（*）设置数据块冗余度原则：一般跟数据节点的个数一样；但是最大不要超过3
+			（*）Hadoop 3.x以前，会造成存储空间的极大浪费
+			     Hadoop 3.x以后，HDFS纠删码技术，大大的节约存储的空间（节约一半 ）
+		
+		3、SecondaryNameNode：第二名称节点
+			职责：进行日志信息的合并
+			
+			（*）由于edits文件记录了最新的状态信息，并且随着操作越多，edits就会越大
+			（*）把edits中的最新信息写到fsimage中
+			（*）edits文件就可以清空
+			
+			补充点知识：检查点checkpoint
+			（*）Spark中的RDD的检查点：容错机制
+			（*）Oracle中的检查点：会以最高优先级唤醒数据库的写进程，将脏数据写入硬盘文件
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

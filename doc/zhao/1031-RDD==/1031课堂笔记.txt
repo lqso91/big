@@ -1,0 +1,182 @@
+
+Spark Core
+=========================================
+一、RDD高级算子
+	1、mapPartitionsWithIndex：对RDD中的每个分区（带有下标）进行操作，通过自己定义的一个函数来处理
+	   API文档：
+	   def mapPartitionsWithIndex[U](f: (Int, Iterator[T]) => Iterator[U])
+	   def mapPartitions[U](f: (Iterator[T]) => Iterator[U]
+	   
+	   参数：f是函数参数，接收两个参数：
+	   （1）Int：代表分区号
+	   （2）Iterator[T]：分区中的元素
+	   （3）返回：Iterator[U]：操作完后，返回的结果
+	   
+	   举例：将每个分区中的元素包括分区号，直接打印出来
+		（*）创建一个RDD
+	         val rdd1 = sc.parallelize(List(1,2,3,4,5,6,7,8,9),2)
+			 
+		（*）创建函数f，对每个分区中的元素进行操作
+		     将元素与分区号，拼加起来
+			 
+		      def func1(index:Int,iter:Iterator[Int]):Iterator[String]={
+				iter.toList.map(x=>"[PartID:"+index+",value="+x+"]").iterator
+			  }
+			  
+		（*）调用
+		     rdd1.mapPartitionsWithIndex(func1).collect
+			 
+		（*）输出的结果：
+			0号分区
+			[PartID:0,value=1], [PartID:0,value=2], [PartID:0,value=3], [PartID:0,value=4], 
+			
+			
+			1号分区
+			[PartID:1,value=5], [PartID:1,value=6], [PartID:1,value=7], [PartID:1,value=8], [PartID:1,value=9]
+	   
+
+	2、aggregate：聚合操作，类似分组（Group By）
+		（*）先对局部进行聚合操作，然后再对全局进行聚合操作
+		（*）举例
+			val rdd2 = sc.parallelize(List(1,2,3,4,5),2)
+			
+			调用func1获取每个分区的元素
+			rdd2.mapPartitionsWithIndex(func1).collect
+			
+			结果
+			[PartID:0,value=1], [PartID:0,value=2], 
+			[PartID:1,value=3], [PartID:1,value=4], [PartID:1,value=5]
+	
+			调用聚合操作
+			（1）初始值是0
+			      rdd2.aggregate(0)(math.max(_,_),_+_)
+				  
+			（2）初始值是10
+			      rdd2.aggregate(10)(math.max(_,_),_+_)  结果：30
+				  
+			将RDD中的元素求和
+				方式一：RDD.map进行求和
+				方式二：使用聚合操作：类似MapReduce中的Combiner
+				        rdd2.aggregate(0)(_+_,_+_)
+						rdd2.aggregate(10)(_+_,_+_)
+		
+		（*）使用aggregate操作字符串（字符）
+		      val rdd2 = sc.parallelize(List("a","b","c","d","e","f"),2)
+			  
+			  需要修改一下func1才能将每个分区中的元素打印出来：
+		      def func1(index:Int,iter:Iterator[String]):Iterator[String]={
+				iter.toList.map(x=>"[PartID:"+index+",value="+x+"]").iterator
+			  }		
+			  
+			  rdd2.mapPartitionsWithIndex(func1).collect
+			  
+			  结果
+			  0号分区
+			  [PartID:0,value=a], [PartID:0,value=b], [PartID:0,value=c], 
+			  
+			  1号分区
+			  [PartID:1,value=d], [PartID:1,value=e], [PartID:1,value=f]
+			  
+			  调用
+				rdd2.aggregate("")(_+_,_+_)   -----> 结果：abcdef
+				scala> rdd2.aggregate("*")(_+_,_+_)
+				res8: String = **abc*def
+
+		（*）讲义上有几个复杂的例子：P57
+				作业：分析一下为什么？？？
+			  
+			  
+	3、aggregateByKey：类似aggregate操作，区别：操作的是<Key Value>的数据类型
+		API说明：PairRDDFunctions.aggregateByKey
+		def aggregateByKey[U](zeroValue: U)(seqOp: (U, V) => U, combOp: (U, U) => U)
+		
+		准备数据：
+		val pairRDD = sc.parallelize(List(("cat",2),("cat", 5),("mouse", 4),("cat", 12),("dog", 12),("mouse", 2)), 2)
+		
+		重写一个func3查看每个分区中的元素
+		def func3(index:Int,iter:Iterator[(String,Int)]) = {
+			iter.toList.map(x =>"[PartID:"+index+",value="+x+"]").iterator
+		}
+		
+		pairRDD.mapPartitionsWithIndex(func3).collect
+		
+		结果
+		0号分区（0动物园）
+		[PartID:0,value=(cat,2)], [PartID:0,value=(cat,5)], [PartID:0,value=(mouse,4)], 
+		
+		1号分区（1动物园）
+		[PartID:1,value=(cat,12)], [PartID:1,value=(dog,12)], [PartID:1,value=(mouse,2)]
+		
+		操作：
+		（1）将每个动物园（分区）中动物数最多的个数进行求和
+				pairRDD.aggregateByKey(0)(math.max(_,_),_+_).collect
+				结果
+				Array((dog,12), (cat,17), (mouse,6))
+				
+		（2）将所有的动物求和
+				pairRDD.aggregateByKey(0)(_+_,_+_).collect
+				结果
+				Array((dog,12), (cat,19), (mouse,6))
+				
+				也可以使用reduceByKey
+				结果：Array((dog,12), (cat,19), (mouse,6))
+	
+
+	4、coalesce与repartition：都是对RDD进行重分区
+		区别：	（1）coalesce默认，不会进行Shuffle（false）
+					def coalesce(numPartitions: Int, shuffle: Boolean = false
+		
+				（2）repartition：将数据真正进行shuffle（在网络上进行重分区）
+				
+		举例：
+			scala> val rdd1 = sc.parallelize(List(1,2,3,4,5,6,7,8,9),2)
+			rdd1: org.apache.spark.rdd.RDD[Int] = ParallelCollectionRDD[12] at parallelize at <console>:24
+
+			scala> val rdd2 = rdd1.repartition(3)
+			rdd2: org.apache.spark.rdd.RDD[Int] = MapPartitionsRDD[16] at repartition at <console>:26
+
+			scala> rdd2.partitions.length
+			res14: Int = 3
+
+			scala> val rdd3 = rdd1.coalesce(3,true)
+			rdd3: org.apache.spark.rdd.RDD[Int] = MapPartitionsRDD[20] at coalesce at <console>:26
+
+			scala> rdd3.partitions.length
+			res15: Int = 3
+
+			scala> val rdd4 = rdd1.coalesce(3)
+			rdd4: org.apache.spark.rdd.RDD[Int] = CoalescedRDD[21] at coalesce at <console>:26
+
+			scala> rdd4.partitions.length
+			res16: Int = 2
+
+	5、其他高级算子
+		http://homepage.cs.latrobe.edu.au/zhe/ZhenHeSparkRDDAPIExamples.html
+
+
+二、编程案例
+	测试数据：Tomcat的访问日志
+
+	（1）分析Tomcat访问日志：找到访问量最高的两个网页
+		(*) 第一步：对网页的访问量求和
+		(*) 第二步：排序（降序）
+	
+	
+	（2）创建自定义的分区：按照jsp的名字，将访问日志进行分区
+	
+	
+	（3）操作Oracle数据库：把结果存入Oracle -----> 重点：针对分区进行操作，而不能针对RDD进行操作（foreach）
+		 下次讲
+	
+	（4）使用JdbcRDD操作数据库
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,167 @@
+
+一、Hive的数据模型
+	3、外部表：只定义表结构，数据保存在HDFS的某个目录下
+		create external table ext_student
+		(sid int,sname string,age int)
+		row format delimited fields terminated by ','
+		location '/students';
+										
+	4、桶表：类似Hash分区
+		根据员工的职位job建立桶表
+		
+	    create table emp_bucket
+		(empno int,
+		 ename string,
+		 job string,
+		 mgr int,
+		 hiredate string,
+		 sal int,
+		 comm int,
+		 deptno int
+		)clustered by (job) into 4 buckets
+	    row format delimited fields terminated by ',';
+	
+		需要设置环境变量：set hive.enforce.bucketing = true;
+		插入数据
+		insert into table emp_bucket select * from emp1;
+
+	5、视图：View
+		(*) 是一个虚（不存数据）表
+		(*) 作用：简化复杂的查询
+		     create view view10
+			 as
+			 select * from emp1 where deptno=10;
+	
+		(*) 补充：物化视图可以缓存数据
+	
+
+二、执行Hive的查询：执行SQL（HQL）
+	注意：HQL是SQL的一个子集
+	
+	创建部门表
+	create table dept
+	(deptno int,dname string,loc string)
+	row format delimited fields terminated by ',';
+	
+	load data local inpath '/root/temp/dept.csv' into table dept;
+	
+	1、查询所有的员工信息
+	   select * from emp1;
+	   
+	2、查询员工信息：员工号  姓名  月薪  部门号
+	    select empno,ename,sal,deptno from emp1;
+		
+	3、多表查询
+	   select dept.dname,emp1.ename
+	   from emp1,dept
+	   where emp1.deptno=dept.deptno;
+	   
+	4、子查询：只支持from和where子句中的子查询
+		查询部门名称是SALES的员工信息
+		select *
+		from emp1
+		where emp1.deptno in (select deptno from dept where dname='SALES');
+	
+	
+	5、条件函数（条件表达式，就是一个if...else...语句）
+		if
+		coalesce
+		case... when...
+		
+		  使用decode函数实现（oracle数据库）
+		  select empno,ename,job,sal "Before",
+		         decode(job,'PRESIDENT',sal+1000,
+				            'MANAGER',sal+800,
+							sal+400) "After"
+		  from emp;
+		
+		 
+		
+		需求：做一个报表，列出涨前和涨后的工资
+		      按照员工的职位来涨工资：总裁：1000    经理：800  其他：400
+			  
+			  select empno,ename,job,sal,
+			         case job when 'PRESIDENT' then sal+1000
+					          when 'MANAGER'then sal+800
+							  else sal+400
+			         end
+			  from emp1;
+				7369	SMITH	CLERK		800		1200
+				7499	ALLEN	SALESMAN	1600	2000
+				7521	WARD	SALESMAN	1250	1650
+				7566	JONES	MANAGER		2975	3775
+				7654	MARTIN	SALESMAN	1250	1650
+				7698	BLAKE	MANAGER		2850	3650
+				7782	CLARK	MANAGER		2450	3250
+				7788	SCOTT	ANALYST		3000	3400
+				7839	KING	PRESIDENT	5000	6000
+				7844	TURNER	SALESMAN	1500	1900
+				7876	ADAMS	CLERK		1100	1500
+				7900	JAMES	CLERK		950		1350
+				7902	FORD	ANALYST		3000	3400
+				7934	MILLER	CLERK		1300	1700
+	
+三、使用JDBC查询Hive
+
+四、Hive的自定义函数：本质是Java程序
+	1、UDF：User Define Function
+	2、封装业务逻辑
+	
+	3、举例
+		（1）实现关系型数据库中concat函数
+		
+		（2）根据员工的薪水，判断薪水的级别
+		      (*) sal < 1000     ----> Grade A
+			  (*) 1000<=sal <3000 ---> Grade B
+			  (*) sal >=3000      ---> Grade C
+
+	4、部署我们jar包（自定义函数）
+		把jar加入Hive的Classpath
+		 add jar /root/temp/myudf.jar;
+		 
+		为自定义函数创建别名
+		 create temporary function myconcat as 'udf.MyConcatString';
+		 create temporary function checksal as 'udf.CheckSalaryGrade';
+===================================================================================
+数据分析引擎：Pig
+
+一、什么是Pig？Pig的体系架构
+	1、是一个翻译器，把PigLatin语句  ----MapReduce
+	   从0.17开始，支持Spark
+	   
+	2、由Yahoo开发
+
+二、Pig的数据模型
+
+三、Pig的安装和配置（非常简单）
+	两种运行的模式
+	1、本地模式：操作本地Linux的文件系统、类似Hadoop的本地模式
+	
+		命令: pig -x local
+		日志： Connecting to hadoop file system at: file:///
+	
+	2、MapReduce模式（集群模式）： 把PigLatin语句转换成MapReduce提交Hadoop上运行
+		日志：Connecting to hadoop file system at: hdfs://bigdata111:9000
+	
+		配置一个环境变量
+		PIG_CLASSPATH ---> 指向Hadoop的配置文件的目录
+		PIG_CLASSPATH=$HADOOP_HOME/etc/hadoop
+		export PIG_CLASSPATH
+	
+四、使用PigLatin语句来分析数据
+
+五、Pig的自定义函数
+
+
+
+
+
+
+
+
+
+
+
+
+
+

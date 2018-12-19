@@ -1,0 +1,163 @@
+
+
+Spark Core
+-------------------------------
+编程案例：访问数据库
+重点：操作RDD，需要针对分区来进行
+
+
+Spark SQL：类似Hive、Pig
+=======================================================
+一、Spark SQL基础
+	1、什么是Spark SQL？特点？
+		 Spark SQL is Apache Spark's module for working with structured data. 
+		 用于处理结构化数据的一个模块
+	   
+	   特点：
+	   （1）容易集成：不需要单独的安装
+	   （2）统一的数据访问方式
+				结构化数据的类型：JDBC、JSON、Hive、Parquet（Spark SQL的默认数据源）
+	   （3）兼容Hive
+	   （4）标准的数据连接： JDBC、ODBC
+	   
+	2、为什么要学习Spark SQL？基于Spark（内存）
+		注意：Hive on Spark
+		注意：个人观点：Hive使用更好
+		
+	3、核心的概念：表（DataFrame或者DataSet）
+			表  =  表结构  + 数据
+			DataFrame = Schema（结构） + RDD（数据）
+	
+	4、创建DataFrame
+		（*）测试数据：员工表、部门表
+		7654,MARTIN,SALESMAN,7698,1981/9/28,1250,1400,30
+
+		（方式一）使用case class
+			（1）定义表的schema
+			case class Emp(empno:Int,ename:String,job:String,mgr:Int,hiredate:String,sal:Int,comm:Int,deptno:Int)
+		
+			（2）导入HDFS的emp.csv 作为数据
+			val lines = sc.textFile("hdfs://bigdata111:9000/scott/emp.csv").map(_.split(","))
+			
+			（3）把每行数据映射到Emp的类上，把数据和schema关联
+				val allEmp = lines.map(x => Emp(x(0).toInt,x(1),x(2),x(3).toInt,x(4),x(5).toInt,x(6).toInt,x(7).toInt))		     
+		
+			（4）生成DataFrame
+					val df1 = allEmp.toDF
+		
+		（方式二）使用Spark Session
+			（1）什么是Spark Session？？？
+					在2.0以后，引入的一个统一的访问接口
+					def createDataFrame(rowRDD: RDD[Row], schema: StructType): DataFrame 
+					
+			（2）使用StructType创建Schema
+			        import org.apache.spark.sql.types._
+					val myschema = StructType(List(StructField("empno", DataTypes.IntegerType), StructField("ename", DataTypes.StringType),StructField("job", DataTypes.StringType),StructField("mgr", DataTypes.IntegerType),StructField("hiredate", DataTypes.StringType),StructField("sal", DataTypes.IntegerType),StructField("comm", DataTypes.IntegerType),StructField("deptno", DataTypes.IntegerType)))	
+
+			（3）得到数据
+					val lines = sc.textFile("hdfs://bigdata111:9000/scott/emp.csv").map(_.split(","))
+
+					import org.apache.spark.sql.Row
+					val rowRDD = lines.map(x => Row(x(0).toInt,x(1),x(2),x(3).toInt,x(4),x(5).toInt,x(6).toInt,x(7).toInt))	
+
+			（4）createDataFrame
+			     val df2 = spark.createDataFrame(rowRDD,myschema)
+					
+					
+		（方式三）直接读取一个带格式的文件：以JSON文件
+				example data：/root/training/spark-2.1.0-bin-hadoop2.7/examples/src/main/resources/people.json
+
+				spark.read ----> 默认的数据源是：Parquet文件
+				
+				val df3 = spark.read.json("/root/temp/people.json")
+				val df4 = spark.read.format("json").load("/root/temp/people.json")
+	
+	5、操作DataFrame
+		（1）DSL语句
+			 df1.printSchema 查看表结构
+		
+			 查询所有员工的信息
+			 df1.show
+			 
+			 查询员工的姓名和薪水
+			 df1.select("ename","sal").show
+			 df1.select($"ename",$"sal").show
+		
+			 查询员工的姓名和薪水,并且给员工涨100块钱
+			 df1.select($"ename",$"sal",$"sal"+100).show
+		
+			 查询薪水大于2000的员工
+			 df1.filter($"sal" > 2000).show
+			 
+			 求每个部门的员工人数
+			 df.groupBy($"deptno").count.show
+
+			 
+		（2）SQL语句
+				注意：需要生成一个视图，执行SQL语句
+				df1.createOrReplaceTempView("emp")
+				
+				使用sparksession执行SQL
+				spark.sql("select * from emp").show
+				
+		（3）支持多表查询
+				创建一个部门表
+					scala> case class Dept(deptno:Int,dname:String,loc:String)
+					defined class Dept
+
+					scala> val lines = sc.textFile("hdfs://bigdata111:9000/scott/dept.csv").map(_.split(","))
+					lines: org.apache.spark.rdd.RDD[Array[String]] = MapPartitionsRDD[62] at map at <console>:28
+
+					scala> val allDept = lines.map(x=>Dept(x(0).toInt,x(1),x(2)))
+					allDept: org.apache.spark.rdd.RDD[Dept] = MapPartitionsRDD[63] at map at <console>:32
+
+					scala> val df5 = allDept.toDF
+					df5: org.apache.spark.sql.DataFrame = [deptno: int, dname: string ... 1 more field]
+
+					scala> df5.createOrReplaceTempView("dept")
+					
+					spark.sql("select dname,ename from emp,dept where emp.deptno=dept.deptno").show
+	
+		（4）思考：Spark SQL和Hive哪个好一些？
+	
+	6、操作DataSet：参考讲义
+	7、Spark SQL中的视图
+		（1）回顾：视图
+		（2）两种类型
+				（*）普通视图（本地视图，局部视图）：只在当前Session中有效
+						df1.createOrReplaceTempView("emp2")
+				
+				（*）全局视图：在不同的Session中使用  ---> 把全局视图创建命名空间：global_temp
+						df1.createGlobalTempView("emp1")
+	
+		（3）情况一：在当前会话中查询
+		      spark.sql("select * from emp2").show
+			  spark.sql("select * from global_temp.emp1").show
+	
+		（4）情况二：在一个新的会话中查询
+		      spark.newSession.sql("select * from emp2").show   ----> 出错 
+			  spark.newSession.sql("select * from global_temp.emp1").show ---> 正常运行
+
+
+二、使用数据源
+	1、使用load函数，save函数
+	2、Parquet文件：列式存储文件、是Spark SQL默认是数据源
+	3、JSON文件
+	4、JDBC
+	5、Hive
+
+
+三、在IDEA中开发Spark SQL程序
+
+
+四、性能的优化：缓存的方式（内存）
+
+
+
+
+
+
+
+
+
+

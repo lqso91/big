@@ -1,0 +1,214 @@
+
+Spark Core
+-------------------------------------------------------------------
+四、分析Spark的任务流程:在IDE中，开发一个Scala版本的和Java版本的WordCount
+	1、分析WordCount数据处理过程（需要结合源码）
+		(*) 使用Maven组织的
+	
+	2、Spark的调用任务的过程
+		
+五、RDD和RDD的特性、RDD的算子（函数、方法）
+	1、RDD：弹性分布式数据集
+			Resilent distributed dataset
+			（*）Spark中最基本的数据抽象
+			（*）结合源码查看什么是RDD？
+					五个特性
+				 * Internally, each RDD is characterized by five main properties:
+				 *
+				 *  - A list of partitions
+				      是一组分区，由分区组成，每个分区运行在不同的worker上
+				 
+				 *  - A function for computing each split
+				    函数（算子），用于处理计算每个分区中的数据
+					（1）Transformation：延时计算，不会触发计算
+					（2）Action：立即执行计算，举例：打印结果、保存为文件，等等
+				 
+				 *  - A list of dependencies on other RDDs
+					RDD之间存在依赖的关系：（1）窄依赖  （2）宽依赖
+					根据依赖的关系，来划分任务的Stage（阶段）
+				 	
+				可选：
+				 *  - Optionally, a Partitioner for key-value RDDs (e.g. to say that the RDD is hash-partitioned)
+					自定义分区规则来创建RDD，类似MapReduce中的分区
+				 
+				 *  - Optionally, a list of preferred locations to compute each split on (e.g. block locations for
+				 *    an HDFS file)	
+	
+			（*）如何创建RDD？
+				（1）通过SparkContext.parallelize创建
+				       val rdd1 = sc.parallelize(Array(1,2,3,4,5,6,7,8),3)
+				
+				
+				（2）通过读取外部的数据源创建：比如：HDFS、本地目录
+				       val rdd1 = sc.textFile("hdfs://bigdata111:9000/input/data.txt")
+					   val rdd2 = sc.textFile("/root/temp/data.txt")
+
+	2、算子（函数）（1）Transformation：会延时加载（计算）
+						map(func)
+						对原来的RDD进行某种操作，返回一个新的RDD
+						
+						filter(func)：过滤
+						flatMap(func)：压平，类似Map
+						
+						mapPartitions(func)：对RDD中的每个分区进行操作
+						mapPartitionsWithIndex(func)：对RDD中的每个分区进行操作，还带有小标
+						
+						sample(withReplacement, fraction, seed)
+						
+						集合运算
+						union(otherDataset)
+						intersection(otherDataset)
+						
+						distinct([numTasks])) 去重
+						
+						聚合操作：（分组）
+						groupByKey([numTasks])	
+						reduceByKey(func, [numTasks])
+						aggregateByKey(zeroValue)(seqOp,combOp,[numTasks])
+						
+						排序
+						sortByKey([ascending], [numTasks]) 针对的是<key value>
+						sortBy(func,[ascending], [numTasks])
+						
+						join(otherDataset, [numTasks])
+						cogroup(otherDataset, [numTasks])
+						cartesian(otherDataset) 笛卡尔积
+						pipe(command, [envVars])
+						
+						重分区
+						coalesce(numPartitions)	
+						repartition(numPartitions)
+						repartitionAndSortWithinPartitions(partitioner)	
+	
+	               （2）Action：触发计算
+						reduce(func)
+						collect()
+						count()
+						first()
+						take(n)
+						takeSample(withReplacement,num, [seed])
+						takeOrdered(n, [ordering])
+						saveAsTextFile(path)
+						saveAsSequenceFile(path) 
+						saveAsObjectFile(path) 
+						countByKey()
+						foreach(func): 类似map，区别是：没有返回值
+				   
+				   
+	3、特性：
+		（1）RDD的缓存机制：默认将RDD的数据缓存在内存中
+				（*）作用：提高性能
+				（*）需要标识RDD可以被缓存：函数：persist或者cache
+						查看源码：
+						
+						storage level标识缓存的位置，默认是内存
+						  /**
+						   * Persist this RDD with the default storage level (`MEMORY_ONLY`).
+						   */
+						  def persist(): this.type = persist(StorageLevel.MEMORY_ONLY)
+
+						  /**
+						   * Persist this RDD with the default storage level (`MEMORY_ONLY`).
+						   */
+						  def cache(): this.type = persist()
+				（*）可以缓存的位置：由StorageLevel来定义
+					  val NONE = new StorageLevel(false, false, false, false)
+					  val DISK_ONLY = new StorageLevel(true, false, false, false)
+					  val DISK_ONLY_2 = new StorageLevel(true, false, false, false, 2)
+					  val MEMORY_ONLY = new StorageLevel(false, true, false, true)
+					  val MEMORY_ONLY_2 = new StorageLevel(false, true, false, true, 2)
+					  val MEMORY_ONLY_SER = new StorageLevel(false, true, false, false)
+					  val MEMORY_ONLY_SER_2 = new StorageLevel(false, true, false, false, 2)
+					  val MEMORY_AND_DISK = new StorageLevel(true, true, false, true)
+					  val MEMORY_AND_DISK_2 = new StorageLevel(true, true, false, true, 2)
+					  val MEMORY_AND_DISK_SER = new StorageLevel(true, true, false, false)
+					  val MEMORY_AND_DISK_SER_2 = new StorageLevel(true, true, false, false, 2)
+					  val OFF_HEAP = new StorageLevel(true, true, true, false, 1)		
+					  
+				（*）举例：
+						测试的数据：Oracle数据库中的订单数据：大概有92万条数据
+						读入数据: var rdd1 = sc.textFile("hdfs://bigdata111:9000/input/sales")
+						计算：统计订单文件中有多少条订单数据？
+						   rdd1.count ---> Action操作，这一次没有缓存 
+						   rdd1.cache ---> 标识这个RDD可以被缓存，但是不会触发计算，cache是一个Transformation
+						   rdd1.count ----> Action操作，把结果进行缓存
+						   rdd1.count ----> 问题：数据从哪里得到？ 从缓存中读取数据
+						
+						通过Web Console观察三次count操作的执行时间
+		
+		（2）RDD的容错机制：通过的检查点（Checkpoint）来实现
+			（*）复习检查点：HDFS中，由SecondaryNameNode来进行日志的合并
+			                 Oracle中，会以最高的优先级唤醒数据库的写进程（DBWn），把内存中的脏数据写到文件
+			（*）RDD的检查点：是一种容错机制
+					概念：Lineage（血统）---> 表示任务执行的生命周期（整个任务的执行过程）
+						  如果血统越长，越容易出错
+						  基于内存
+						  
+			（*）RDD的类型有两种类型
+				通过SparkContext.setCheckpointDir(目录)
+			
+				1、本地目录：需要将spark-shell或者任务运行在本地模式上(setMaster("local"))
+				             用于开发和测试
+							 sc.setCheckpointDir("/root/tem/spark")
+				
+				2、HDFS的目录：需要将spark-shell或者任务运行在集群模式上
+				               用于生产
+							   
+
+			（*）举例
+				scala> sc.setCheckpointDir("hdfs://bigdata111:9000/sparkckpt")
+				       设置检查点目录
+
+				scala> var rdd1 = sc.textFile("hdfs://bigdata111:9000/input/sales")
+				rdd1: org.apache.spark.rdd.RDD[String] = hdfs://bigdata111:9000/input/sales MapPartitionsRDD[39] at textFile at <console>:24
+
+				scala> rdd1.checkpoint    ----> 查看一下源码
+				       标识RDD可以执行检查点
+					  /**
+					   * Mark this RDD for checkpointing. It will be saved to a file inside the checkpoint
+					   * directory set with `SparkContext#setCheckpointDir` and all references to its parent
+					   * RDDs will be removed. This function must be called before any job has been
+					   * executed on this RDD. It is strongly recommended that this RDD is persisted in
+					   * memory, otherwise saving it on a file will require recomputation.
+					   */
+					   
+				scala> rdd1.count
+				res16: Long = 918843 			
+		
+		（3）依赖关系：宽依赖、窄依赖	
+		               可以划分任务执行的Stage（阶段）
+			（*）回顾WordCount程序：
+			    val rdd1 = sc.textFile("/root/temp/input/data.txt")
+				val rdd2 = rdd1.flatMap(_.split(" "))
+				val rdd3 = rdd2.map((_,1))   完整: val rdd3 = rdd2.map((word:String)=>(word,1) )
+				val rdd4 = rdd3.reduceByKey(_+_) 
+				rdd4.collect	
+
+			（*）宽依赖：类似“超生”
+			             多个子RDD的分区依赖了同一个父RDD的分区
+						 
+			
+			（*）窄依赖：类似“独生子女”
+			             每一个父RDD的分区，最多被一个RDD的分区使用
+						 
+			参考讲义
+				   
+				   
+六、RDD高级算子
+
+七、编程案例
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
