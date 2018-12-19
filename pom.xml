@@ -11,6 +11,8 @@
     <modules>
         <module>es</module>
         <module>hdfs</module>
+        <module>mapreduce</module>
+        <module>hive</module>
     </modules>
 
     <repositories>
