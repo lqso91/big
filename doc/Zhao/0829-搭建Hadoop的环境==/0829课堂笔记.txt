@@ -1,5 +1,3 @@
-
-
 Hadoop的起源与背景知识（非常重要：原理的部分）
 ================================================
 一、Google的基本思想：三篇论文
@@ -14,7 +12,7 @@ Hadoop的起源与背景知识（非常重要：原理的部分）
 		   
 		    Yarn = ResourceManager + NodeManager
 			
-			Example：/root/training/hadoop-2.7.3/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar
+			Example：/opt/hadoop-2.7.3/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar
 			Yarn的web console：
 			http://192.168.157.11:8088
 			
@@ -38,14 +36,14 @@ Hadoop的起源与背景知识（非常重要：原理的部分）
 		2、关闭防火墙、配置主机名
 		3、安装JDK
 		4、解压安装包
-			tar -zxvf hadoop-2.7.3.tar.gz -C ~/training/
+			tar -axf hadoop-2.7.3.tar.gz -C /opt/
 	
 	（二）Hadoop的目录结构
 			安装tree命令
 			rpm -ivh tree-1.6.0-10.el7.x86_64.rpm
 			
 			设置Hadoop的环境变量  vi ~/.bash_profile
-			HADOOP_HOME=/root/training/hadoop-2.7.3
+			HADOOP_HOME=/opt/hadoop-2.7.3
 			export HADOOP_HOME
 			
 			PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH
@@ -66,7 +64,7 @@ Hadoop的起源与背景知识（非常重要：原理的部分）
 					HDFS：NameNode + DataNode + SecondaryNameNode
 					Yarn：ResourceManager + NodeManager
 					
-			（*）hadoop-env.sh	JAVA_HOME	/root/training/jdk1.8.0_144
+			（*）hadoop-env.sh	JAVA_HOME	/opt/jdk1.8.0_144
 			（*）hdfs-site.xml
 					<!--配置数据块的冗余度,默认是3-->
 					<!--原则冗余度跟数据节点个数保持一致,最大不要超过3-->
@@ -96,7 +94,7 @@ Hadoop的起源与背景知识（非常重要：原理的部分）
 					<!--默认是Linux的tmp目录,一定要修改-->
 					<property>	
 						<name>hadoop.tmp.dir</name>
-						<value>/root/training/hadoop-2.7.3/tmp</value>
+						<value>/opt/hadoop-2.7.3/tmp</value>
 					</property>
 
 			（*）mapred-site.xml（默认没有这个文件）
@@ -119,22 +117,28 @@ Hadoop的起源与背景知识（非常重要：原理的部分）
 						<value>mapreduce_shuffle</value>
 					</property>	
 					
-			（*）对HDFS的NameNode进行格式化  -----> 目录：/root/training/hadoop-2.7.3/tmp
+			（*）对HDFS的NameNode进行格式化  -----> 目录：/opt/hadoop-2.7.3/tmp
 					举例：软盘，需要格式化
 					
 					命令：hdfs namenode -format
-					日志：Storage directory /root/training/hadoop-2.7.3/tmp/dfs/name has been successfully formatted.
+					日志：Storage directory /opt/hadoop-2.7.3/tmp/dfs/name has been successfully formatted.
 					
 			（*）启动：
-					HDFS：start-dfs.sh
-					Yarn: start-yarn.sh
+					HDFS：start-dfs.sh  ---> 使用hdfs时启动
+					Yarn: start-yarn.sh ---> 使用mapreduce时启动
 					统一的：start-all.sh 
 					
 					Web Console访问：hdfs: 端口: 50070
 					                 yarn: 端口：8088
 									 
 			（*）免密码登录的原理和配置
-					
+					原理：使用非对称加密算法。
+					配置： A --免密登录--> B
+					1、在A上生成公钥和私钥
+					    ssh-keygen -t rsa
+					2、将A的公钥拷贝至B
+					    ssh-copy-id -i .ssh/id_rsa.pub root@B's ip
+					    实质是将A的公钥放在B的.ssh/authorized_keys文件中
 		3、全分布模式
 			
 			
