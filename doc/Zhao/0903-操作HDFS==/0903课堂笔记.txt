@@ -1,8 +1,4 @@
-
-
-问题：不够仔细
-------------------------------------------
-一、操作HDFS 
+一、操作HDFS
 	1、Web Console：端口 50070
 	
 	2、命令行：类似Linux的命令
@@ -72,6 +68,8 @@
 			hdfs dfsadmin -safemode get
 		
 	3、Java API
+	    http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/filesystem/index.html
+
 		依赖的jar包：
 		$HADOOP_HOME/share/hadoop/common/*.jar
 		$HADOOP_HOME/share/hadoop/common/lib/*.jar
@@ -79,7 +77,30 @@
 		$HADOOP_HOME/share/hadoop/hdfs/*.jar
 		$HADOOP_HOME/share/hadoop/hdfs/lib/*.jar
 		
-		
+		MAVEN:
+		<properties>
+            <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+            <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+            <java.version>1.8</java.version>
+            <hadoop.version>2.7.6</hadoop.version>
+        </properties>
+
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+
 		（*）创建目录: HDFS的权限的问题
 					<!--是否开启HDFS的权限检查，默认是true-->
 					<!--使用默认值，后面会改为false-->
@@ -94,11 +115,38 @@
 		（*）查看文件的信息
 		（*）数据节点信息
 		（*）等等
-	
 
 二、HDFS的原理分析（非常重要）
 	1、数据上传的过程
+	    1）客户端调用DistributedFileSystem的create方法
+        2）DistributedFileSystem远程RPC调用Namenode在文件系统的命名空间中创建一个新文件，此时该文件没有关联到任何block。
+            这个过程中，Namenode会做很多校验工作，例如是否已经存在同名文件，是否有权限，如果验证通过，
+            返回一个FSDataOutputStream对象。 如果验证不通过，抛出异常到客户端。
+        3）客户端写入数据的时候，DFSOutputStream分解为packets，并写入到一个数据队列中，该队列由DataStreamer消费。
+        4）DateStreamer负责请求Namenode分配新的block存放的数据节点。这些节点存放同一个Block的副本，构成一个管道。
+            DataStreamer将packer写入到管道的第一个节点，第一个节点存放好packer之后，转发给下一个节点，
+            下一个节点存放 之后继续往下传递。
+        5）DFSOutputStream同时维护一个ack queue队列，等待来自datanode确认消息。当管道上的所有datanode都确认之后，
+            packer从ack队列中移除。
+        6）数据写入完毕，客户端close输出流。将所有的packet刷新到管道中，然后安心等待来自datanode的确认消息。
+            全部得到确认之后告知Namenode文件是完整的。 Namenode此时已经知道文件的所有Block信息
+            （因为DataStreamer是请求Namenode分配block的），只需等待达到最小副本数要求，然后返回成功信息给客户端。
+
 	2、数据下载的过程
+        1）客户端传递一个文件Path给FileSystem的open方法
+        2）DFS采用RPC远程获取文件最开始的几个block的datanode地址。Namenode会根据网络拓扑结构决定返回哪些节点
+            （前提是节点有block副本），如果客户端本身是Datanode并且节点上刚好有block副本，直接从本地读取。
+        3）客户端使用open方法返回的FSDataInputStream对象读取数据（调用read方法）
+        4）DFSInputStream（FSDataInputStream实现了该类）连接持有第一个block的、最近的节点，反复调用read方法读取数据
+        5）第一个block读取完毕之后，寻找下一个block的最佳datanode，读取数据。如果有必要，
+            DFSInputStream会联系Namenode获取下一批Block 的节点信息(存放于内存，不持久化），这些寻址过程对客户端都是不可见的。
+        6）数据读取完毕，客户端调用close方法关闭流对象
+            在读数据过程中，如果与Datanode的通信发生错误，DFSInputStream对象会尝试从下一个最佳节点读取数据，
+            并且记住该失败节点， 后续Block的读取不会再连接该节点。读取一个Block之后，DFSInputStram会进行检验和验证，
+            如果Block损坏，尝试从其他节点读取数据，并且将损坏的block汇报给Namenode。
+            客户端连接哪个datanode获取数据，是由namenode来指导的，这样可以支持大量并发的客户端请求，
+            namenode尽可能将流量均匀分布到整个集群。
+            Block的位置信息是存储在namenode的内存中，因此相应位置请求非常高效，不会成为瓶颈。
 
 三、HDFS的高级特性
 	1、安全模式 safe mode
