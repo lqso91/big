@@ -200,5 +200,5 @@
             Block的抽象也简化了存储系统，对于Block，无需关注其权限，所有者等内容（这些内容都在文件级别上进行控制）。
             Block作为容错和高可用机制中的副本单元，即以Block为单位进行复制。
 
-深入理解HDFS：Hadoop分布式文件系统
+深入理解HDFS：Hadoop分布式文件系统（该博客内容整理自Hadoop权威指南）
 https://blog.csdn.net/bingduanlbd/article/details/51914550
