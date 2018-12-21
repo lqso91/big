@@ -1,4 +1,9 @@
 #!/bin/bash
+if [ $UID -eq 0 ]; then
+   echo "Can not be run as root!"
+   exit 1
+fi
+
 CFILE=kh_ydkh_add.conf
 LFILE=kh_ydkh_add.log
 

@@ -1,4 +1,9 @@
 #!/bin/bash
+if [ $UID -eq 0 ]; then
+   echo "Can not be run as root!"
+   exit 1
+fi
+
 CFILE=kh_ydkh_init.conf
 LFILE=kh_ydkh_init.log
 LS_PID=$(ps -ef | grep logstash | grep $CFILE | awk '{printf $2}')
