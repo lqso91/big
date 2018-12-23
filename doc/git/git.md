@@ -42,9 +42,11 @@ git clone git@lqso.top:testing.git [newname]
 ```
 ### 基本操作
 ![git流程图](git/images/gitwork.png)
-- 将文件或目录提交到暂存区
+- 将文件或目录提交到暂存区  
+！空目录会被忽略，如果要保留空目录可以在目录下添加.gitkeep文件
 ```$xslt
 git add file/directory
+find . -type d -empty | grep -v target | grep -v .git | xargs -I {} touch {}/.gitkeep
 ```
 
 - 查看上次提交之后的改变
