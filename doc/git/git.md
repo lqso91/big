@@ -47,6 +47,9 @@ git clone git@lqso.top:testing.git [newname]
 ```$xslt
 git add file/directory
 find . -type d -empty | grep -v target | grep -v .git | xargs -I {} touch {}/.gitkeep
+目录带有空格时：
+find . -type d -empty -print0 | grep -v target | grep -v .git | xargs -0 -I {} touch {}/.gitkeep
+（-print0 find以NULL结尾，-0 xargs以NULL分割）
 ```
 
 - 查看上次提交之后的改变
