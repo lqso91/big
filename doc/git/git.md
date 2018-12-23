@@ -83,6 +83,13 @@ git push
 ```$xslt
 git rm --cached file
 ```
+- 删掉push到远程的文件或文件夹
+```$xslt
+git rm -r -n --cached .idea (-n 查看要删除的文件)
+git rm -r --cached .idea
+git commit -m 'remove .idea'
+git push
+```
 ### 分支管理
 - 列出分支
 ```$xslt
