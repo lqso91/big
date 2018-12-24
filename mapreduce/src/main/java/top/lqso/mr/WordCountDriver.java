@@ -1,7 +1,9 @@
 package top.lqso.mr;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -19,7 +21,12 @@ public class WordCountDriver extends Configured implements Tool {
         job.setJarByClass(getClass());
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        Path output = new Path(args[1]);
+        // 删除输出文件夹
+        FileSystem fileSystem = output.getFileSystem(getConf());
+        if(fileSystem.exists(output))
+            fileSystem.delete(output, true);
+        FileOutputFormat.setOutputPath(job, output);
 
         job.setMapperClass(WordCountMapper.class);
         job.setMapOutputKeyClass(Text.class);
