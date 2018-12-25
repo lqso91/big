@@ -1,5 +1,3 @@
-
-
 一、MapReduce编程案例：求部门的工资总额
 	1、员工表
 		SQL：select deptno,sum(sal) from emp group by deptno;
@@ -32,15 +30,15 @@
 	
 三、MapReduce核心：Shuffle（洗牌）
 
-
-
-
-
-
-
-
-
-
-
-
-
+------------------
+补充：
+一、MapReduce作业运行机制（详见：Hadoop权威指南 7.1节）
+5个独立的实体：
+    客户端，提交MapReduce作业
+    YARN资源管理器，负责协调集群上计算机资源的分配
+    YARN节点管理器，负责启动和监视集群中机器上的计算容器
+    MapReduce的application master，负责协调运行MapReduce作业任务。
+        它和MapReduce任务在容器中运行，这些容器由资源管理器分配并
+        由节点管理器进行管理。
+    分布式文件系统，用来与其他实体间共享作业任务。
+作业的提交：
