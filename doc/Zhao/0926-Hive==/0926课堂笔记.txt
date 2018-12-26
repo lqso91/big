@@ -204,7 +204,12 @@ insert into table emp_part partition(deptno=30) select empno,ename,job,mgr,hired
 
 五、执行Hive的查询：执行SQL（HQL）
 	注意：HQL是SQL的一个子集
-	
+	1、查看当前正在使用的数据库
+	    select current_database();
+	2、查看表结构
+	    desc emp;
+	    desc formatted emp;
+
 六、使用JDBC查询Hive
 
 七、Hive的自定义函数：本质是Java程序
