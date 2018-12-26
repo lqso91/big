@@ -94,6 +94,22 @@
 		  启动MySQL：service mysqld start
 		  或者：systemctl start mysqld.service
 
+        ----------------使用MariaDB----------------
+            yum install mariadb* -y
+
+            systemctl start mariadb
+            systemctl enable mariadb
+
+            使用脚本初始化密码:
+            mysql_secure_installation
+            修改密码:
+            UPDATE user SET password=password('Abc12345') WHERE user='root' and host='localhost';
+            flush privileges;
+            或
+            SET password for 'root'@'localhost'=password('Abc12345');
+
+        -------------------------------------------
+
 		  查看root用户的密码：cat /var/log/mysqld.log | grep password
 		  登录后修改密码：alter user 'root'@'localhost' identified by 'Welcome_1';
 
@@ -117,24 +133,22 @@
 					<name>javax.jdo.option.ConnectionURL</name>
 					<value>jdbc:mysql://localhost:3306/hive?useSSL=false</value>
 				</property>				
-
 				<property>
 					<name>javax.jdo.option.ConnectionDriverName</name>
 					<value>com.mysql.jdbc.Driver</value>
 				</property>	
-
 				<property>
 					<name>javax.jdo.option.ConnectionUserName</name>
 					<value>hiveowner</value>
 				</property>	
-
 				<property>
 					<name>javax.jdo.option.ConnectionPassword</name>
 					<value>Welcome_1</value>
 				</property>					
-			
 			</configuration>
-			
+
+        初始化MetaStore：
+            schematool -dbType mysql -initSchema
 
 四、（最重要）Hive的数据模型
 	1、内部表：类似MySQL、Oracle中表  
@@ -142,30 +156,17 @@
 		
 		举例：创建一个员工表 emp表
 		      数据 7654,MARTIN,SALESMAN,7698,1981/9/28,1250,1400,30
+
+        create table emp(empno int,ename string,job string,mgr int,hiredate string,
+        sal int,comm int,deptno int);
 			  
-			  create table emp
-			  (empno int,
-			   ename string,
-			   job   string,
-			   mgr   int,
-			   hiredate string,
-			   sal   int,
-			   comm  int,
-			   deptno int
-			  );
-			  
-			  创建一个员工表 emp1表，并且指定分隔符是：逗号
-			  create table emp1
-			  (empno int,
-			   ename string,
-			   job   string,
-			   mgr   int,
-			   hiredate string,
-			   sal   int,
-			   comm  int,
-			   deptno int
-			  )row format delimited fields terminated by ',';			  
-			  
+			  创建一个员工表 emp1表，并且指定分隔符是：逗号(用于导入csv文件)
+		create table emp1(empno int, ename string, job string, mgr int, hiredate string,
+		sal int, comm int, deptno int)row format delimited fields terminated by ',';
+
+			  DROP TABLE emp;
+			  ALTER TABLE emp1 RENAME TO emp;
+
 		导入数据：
 			insert语句
 			load语句：相当于ctrl+x
@@ -191,8 +192,7 @@
 insert into table emp_part partition(deptno=10) select empno,ename,job,mgr,hiredate,sal,comm from emp1 where deptno=10;
 insert into table emp_part partition(deptno=20) select empno,ename,job,mgr,hiredate,sal,comm from emp1 where deptno=20;
 insert into table emp_part partition(deptno=30) select empno,ename,job,mgr,hiredate,sal,comm from emp1 where deptno=30;
-	
-	
+
 		（*）补充：如何判断提高了性能？ ----> 重点讲：关系型数据库（Oracle）、Hive类似方式
 		                                ----> SQL执行计划
 
@@ -208,21 +208,4 @@ insert into table emp_part partition(deptno=30) select empno,ename,job,mgr,hired
 六、使用JDBC查询Hive
 
 七、Hive的自定义函数：本质是Java程序
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
