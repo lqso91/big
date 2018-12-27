@@ -1,5 +1,8 @@
 package top.lqso.es.bean;
 
+/**
+ * @author luojie
+ */
 public class EsConfig {
 
     private String host;

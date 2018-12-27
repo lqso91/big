@@ -26,6 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * es服务
+ * @author luojie
+ * @date 2018-12-27
+ */
 @Service
 public class EsService {
     protected Logger logger = LoggerFactory.getLogger(EsService.class);

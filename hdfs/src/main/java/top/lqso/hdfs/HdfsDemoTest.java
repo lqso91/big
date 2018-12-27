@@ -11,8 +11,11 @@ import org.junit.Test;
 
 import java.io.*;
 
-public class HDFSDemo {
-
+/**
+ * @author luojie
+ */
+public class HdfsDemoTest {
+    
     @Test
     public void download() {
         //指定当前的Hadoop的用户

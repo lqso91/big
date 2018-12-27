@@ -24,11 +24,11 @@ public class AccountInfo implements Serializable{
 	/** 用点地址 */
 	private String yddz;
 	
-	/** 抄表电量 */
-	private BigDecimal cbdl;	//ZYGCJDL
+	/** 抄表电量 ZYGCJDL*/
+	private BigDecimal cbdl;
 	
-	/** 抄表行度 */
-	private String cbhd;	// ZYGZM
+	/** 抄表行度 ZYGZM*/
+	private String cbhd;
 	
 	/** 抄表日期 */
 	private Date cbrq;
@@ -48,6 +48,8 @@ public class AccountInfo implements Serializable{
 	/** 是否居民 */
 	private Boolean isResident;
 
+	private static final String JMYDLBDM = "500";
+
 	public String getYdlbdm() {
 		return ydlbdm;
 	}
@@ -58,7 +60,7 @@ public class AccountInfo implements Serializable{
 	
 	public Boolean getIsResident() {
 		if(StringUtils.isNotEmpty(ydlbdm)) {
-			if("500".equals(ydlbdm)) {
+			if(JMYDLBDM.equals(ydlbdm)) {
 				isResident = Boolean.TRUE;
 			}else {
 				isResident = Boolean.FALSE;
