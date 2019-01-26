@@ -1,0 +1,16 @@
+1、scala sdk和scala-library依赖版本需要一致，若依赖spark-core_2.11，则二者需为2.11.x
+错误：
+Exception in thread "main" java.lang.NoSuchMethodError: scala.Predef$.refArrayOps([Ljava/lang/Object;)Lscala/collection/mutable/ArrayOps;
+	at org.apache.spark.internal.config.ConfigHelpers$.stringToSeq(ConfigBuilder.scala:48)
+	at org.apache.spark.internal.config.TypedConfigBuilder$$anonfun$toSequence$1.apply(ConfigBuilder.scala:124)
+	at org.apache.spark.internal.config.TypedConfigBuilder$$anonfun$toSequence$1.apply(ConfigBuilder.scala:124)
+	at org.apache.spark.internal.config.TypedConfigBuilder.createWithDefault(ConfigBuilder.scala:142)
+	at org.apache.spark.internal.config.package$.<init>(package.scala:152)
+	at org.apache.spark.internal.config.package$.<clinit>(package.scala)
+	at org.apache.spark.SparkConf$.<init>(SparkConf.scala:668)
+	at org.apache.spark.SparkConf$.<clinit>(SparkConf.scala)
+	at org.apache.spark.SparkConf.set(SparkConf.scala:94)
+	at org.apache.spark.SparkConf.set(SparkConf.scala:83)
+	at org.apache.spark.SparkConf.setAppName(SparkConf.scala:120)
+	at top.lqso.spark.WordCount$.main(WordCount.scala:8)
+	at top.lqso.spark.WordCount.main(WordCount.scala)
