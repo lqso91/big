@@ -17,6 +17,7 @@
         <module>code</module>
         <module>kafka</module>
         <module>spark</module>
+        <module>websocket</module>
     </modules>
 
     <!--<repositories>-->
