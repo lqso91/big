@@ -1,4 +1,4 @@
-  package top.lqso.spark
+package top.lqso.spark
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkConf
 
@@ -9,7 +9,7 @@ object WordCount {
       .setMaster("local")
 
     val sc = new SparkContext(conf)
-    sc.textFile("E:\\1\\words.txt")
+    sc.textFile("H:\\tmp\\words.txt")
       .flatMap(_.split(" "))
       .map((_,1))
       .reduceByKey(_+_)
