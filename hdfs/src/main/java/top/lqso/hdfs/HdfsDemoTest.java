@@ -15,7 +15,9 @@ import java.io.*;
  * @author luojie
  */
 public class HdfsDemoTest {
-    
+
+    private String host = "v1";
+
     @Test
     public void download() {
         //指定当前的Hadoop的用户
@@ -23,7 +25,7 @@ public class HdfsDemoTest {
 
         //配置参数：指定NameNode地址
         Configuration conf = new Configuration();
-        conf.set("fs.defaultFS", "hdfs://192.168.254.112:9000");
+        conf.set("fs.defaultFS", String.format("hdfs://%s:9000", host));
 
         DistributedFileSystem fileSystem = null;
         InputStream input = null;
@@ -46,13 +48,13 @@ public class HdfsDemoTest {
     }
 
     @Test
-    public void getNodInfo() {
+    public void getNodeInfo() {
         //指定当前的Hadoop的用户
         System.setProperty("HADOOP_USER_NAME", "root");
 
         //配置参数：指定NameNode地址
         Configuration conf = new Configuration();
-        conf.set("fs.defaultFS", "hdfs://192.168.254.112:9000");
+        conf.set("fs.defaultFS", String.format("hdfs://%s:9000", host));
 
         try {
             //创建一个客户端
@@ -74,7 +76,7 @@ public class HdfsDemoTest {
 
         //配置参数：指定NameNode地址
         Configuration conf = new Configuration();
-        conf.set("fs.defaultFS", "hdfs://192.168.254.112:9000");
+        conf.set("fs.defaultFS", String.format("hdfs://%s:9000", host));
         DistributedFileSystem fileSystem = null;
         InputStream input = null;
 
