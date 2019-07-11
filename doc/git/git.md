@@ -1,3 +1,7 @@
+### Git官网文档
+https://git-scm.com/docs
+https://git-scm.com/book/zh/v2
+
 ### 配置  
 git config --system (系统配置)  
 git config --global (当前用户配置)
