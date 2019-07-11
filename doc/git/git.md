@@ -45,7 +45,7 @@ git init project-a
 git clone git@lqso.top:testing.git [newname]
 ```
 ### 基本操作
-![git流程图](git/images/gitwork.png)
+![git流程图](doc/git/images/gitwork.png)
 - 将文件或目录提交到暂存区  
 ！空目录会被忽略，如果要保留空目录可以在目录下添加.gitkeep文件
 ```$xslt
@@ -161,4 +161,4 @@ git push origin master
 ```$xslt
 git remote rm <remote>
 ```
-![git命令](git/images/gitcommand.jpg)
+![git命令](doc/git/images/gitcommand.jpg)
