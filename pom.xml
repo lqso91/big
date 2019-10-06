@@ -18,6 +18,7 @@
         <module>kafka</module>
         <module>spark</module>
         <module>websocket</module>
+        <module>leetcode</module>
     </modules>
 
     <!--<repositories>-->
