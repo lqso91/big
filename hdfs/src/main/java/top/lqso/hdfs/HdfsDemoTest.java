@@ -16,7 +16,7 @@ import java.io.*;
  */
 public class HdfsDemoTest {
 
-    private String host = "v1";
+    private String host = "172.17.0.2";
 
     @Test
     public void download() {
