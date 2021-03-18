@@ -13,7 +13,7 @@
 
     <properties>
         <springboot.version>2.1.0.RELEASE</springboot.version>
-        <es.version>6.5.1</es.version>
+        <es.version>7.11.2</es.version>
     </properties>
 
     <dependencies>
